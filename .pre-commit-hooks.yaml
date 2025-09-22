@@ -1,4 +1,4 @@
 - id: tangle-check
   name: Org Tangle Check
-  entry: tangle-check.sh
+  entry: ./tangle-check.sh
   language: system
