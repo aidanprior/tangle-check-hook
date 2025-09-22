@@ -1,0 +1,44 @@
+#+TITLE: tangle-check-hook
+#+AUTHOR: Aidan Prior
+#+DATE: <2024-06-09>
+#+OPTIONS: toc:nil
+#+PROPERTY: header-args :tangle no :eval no
+
+* tangle-check-hook
+
+This repository provides a pre-commit hook for Org-mode users who want to ensure their code blocks are properly tangled before committing. The hook is designed to run a custom shell script that checks for tangled code in your Org files, and can be easily integrated into your project's pre-commit configuration.
+
+*Features:*
+- Ensures code blocks in Org files are up-to-date and tangled.
+- Prevents accidental commits of outdated or untangled code.
+- Avoids drift by ensuring the tangled files are not edited directly.
+
+* Usage
+** 0. Prequisites
+- Ensure you have `pre-commit` installed. You can install it via pip:
+
+  ```bash
+  pip install pre-commit
+  ```
+- Ensure you have Emacs installed with org-mode available in your PATH.
+
+** 1. Add to your .pre-commit-config.yaml
+
+#+begin_src yaml
+repos:
+- repo: https://github.com/aidanprior/tangle-check-hook
+  rev: v0.1.0  # Use the latest tag or commit
+  hooks:
+    - id: tangle-check
+#+end_src
+
+** 2. Install the hook
+
+#+begin_src shell
+pre-commit install
+#+end_src
+
+
+* License
+
+GPL License. See [[./LICENSE][LICENSE]] for details.

@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+ORG_FILE="README.org"
+
+# --- collect tangle targets from README.org without writing files ---
+# Use process substitution and load ob-tangle explicitly to avoid quoting bugs.
+TARGETS=()
+emacs -Q --batch\
+  --eval "(setq org-id-locations-file nil)"\
+  -l org -l ob-tangle \
+  --eval "(with-current-buffer (find-file-noselect \"${root}/${ORG_FILE}\")
+             (let* ((alist (org-babel-tangle-collect-blocks))
+                    (files (delete-dups (mapcar #'car alist))))
+               (princ (mapconcat (lambda (f) (expand-file-name f \"${root}\"))
+                                   files
+                                   \"\n\"))))"\
+  | while IFS= read -r line; do
+    TARGETS+=("$line")
+  done 
+
+# Helper: staged? (test a pathspec list)
+staged_any() {
+  # no args → false
+  [ "$#" -eq 0 ] && return 1
+  git diff --cached --quiet -- "$@" && return 1 || return 0
+}
+
+# Helper: run tangling + stage
+tangle_and_stage() {
+  emacs -Q --batch \
+  --eval "(setq org-id-locations-file nil)" \
+  -l org \
+    --eval "(setq org-confirm-babel-evaluate nil
+                  org-src-preserve-indentation t)" \
+    --eval "(org-babel-tangle-file \"${root}/${ORG_FILE}\")" >/dev/null
+  git add -A
+}
+
+# Is README.org staged?
+org_staged=false
+if git diff --cached --quiet -- "$ORG_FILE"; then
+  org_staged=false
+else
+  org_staged=true
+fi
+
+# Build an array of target paths relative to repo for git pathspec
+rel_targets=()
+for f in "${TARGETS[@]}"; do
+  [ "${f-}" = "" ] && continue
+  rel="${f#"${root}"/}"
+  rel_targets+=("$rel")
+done
+
+# Are any target files staged?
+targets_staged=false
+if staged_any "${rel_targets[@]}"; then
+  targets_staged=true
+fi
+
+# Decision matrix
+if [ "$org_staged" = false ] && [ "$targets_staged" = false ]; then
+  echo "✓ Neither ${ORG_FILE} nor tangled files are staged."
+  exit 0
+fi
+
+if [ "$org_staged" = false ] && [ "$targets_staged" = true ]; then
+  echo "✗ Tangled files are staged but ${ORG_FILE} is not."
+  echo "  Edit ${ORG_FILE} and let this hook regenerate them."
+  echo "  If you must commit direct edits, force the commit:"
+  echo "    git commit --no-verify"
+  echo "  or skip this hook:"
+  echo "    SKIP=org-tangle-smart-targets git commit"
+  exit 1
+fi
+
+# README.org is staged (targets may or may not be)
+tangle_and_stage
+
+if [ "$targets_staged" = true ]; then
+  # Ensure no drift remains after tangling
+  if ! git diff --quiet; then
+    echo "✗ After tangling, there are still unstaged changes in tangled outputs."
+    echo "  That means the staged edits to targets don’t match code produced"
+    echo "  from ${ORG_FILE}."
+    echo
+    echo "Files still differing:"
+    git --no-pager diff --name-only
+    echo
+    echo "Hints:"
+    echo "  • If you want the *tangle result* to win:"
+    echo "      git add -A && git commit"
+    echo "  • If you intentionally want the *staged* edits anyway:"
+    echo "      git commit --no-verify"
+    echo "    or  SKIP=org-tangle-smart-targets git commit"
+    exit 1
+  fi
+fi
+
+# Clean → success
+exit 0
