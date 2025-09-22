@@ -6,21 +6,27 @@ cd "$root"
 ORG_FILE="README.org"
 
 # --- collect tangle targets from README.org without writing files ---
-# Use process substitution and load ob-tangle explicitly to avoid quoting bugs.
-TARGETS=()
-emacs -Q --batch\
-  --eval "(setq org-id-locations-file nil)"\
+# --- collect tangle targets from README.org without writing files ---
+declare -a TARGETS=()
+tmpfile="$(mktemp -t tangle_targets.XXXXXX)"
+# Generate absolute target paths (one per line)
+emacs -Q --batch \
+  --eval "(setq org-id-locations-file nil
+                 org-id-locations nil
+                 org-id-extra-files nil)" \
   -l org -l ob-tangle \
   --eval "(with-current-buffer (find-file-noselect \"${root}/${ORG_FILE}\")
              (let* ((alist (org-babel-tangle-collect-blocks))
                     (files (delete-dups (mapcar #'car alist))))
                (princ (mapconcat (lambda (f) (expand-file-name f \"${root}\"))
-                                   files
-                                   \"\n\"))))"\
-  | while IFS= read -r line; do
-    TARGETS+=("$line")
-  done 
+                                 files
+                                 \"\n\"))))" > "$tmpfile"
 
+# Read back into TARGETS without spawning a subshell
+while IFS= read -r line; do
+  [ "$line" != "" ] && TARGETS+=("$line")
+done < "$tmpfile"
+rm -f "$tmpfile"
 # Helper: staged? (test a pathspec list)
 staged_any() {
   # no args → false
@@ -48,16 +54,18 @@ else
 fi
 
 # Build an array of target paths relative to repo for git pathspec
-rel_targets=()
-for f in "${TARGETS[@]}"; do
-  [ "${f-}" = "" ] && continue
-  rel="${f#"${root}"/}"
-  rel_targets+=("$rel")
-done
+declare -a rel_targets=()
+if ((${#TARGETS[@]})); then
+  for f in "${TARGETS[@]}"; do
+    [ "${f-}" = "" ] && continue
+    rel="${f#"${root}"/}"
+    rel_targets+=("$rel")
+  done
+fi
 
 # Are any target files staged?
 targets_staged=false
-if staged_any "${rel_targets[@]}"; then
+if ((${#rel_targets[@]})) && staged_any "${rel_targets[@]}"; then
   targets_staged=true
 fi
 
