@@ -1,4 +1,5 @@
 - id: tangle-check
   name: Org Tangle Check
-  entry: ./tangle-check.sh
-  language: system
+  entry: tangle-check.sh
+  language: script
+  pass_filenames: false
