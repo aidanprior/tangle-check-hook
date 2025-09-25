@@ -3,4 +3,3 @@
   entry: tangle-check.sh
   language: script
   pass_filenames: false
-  args: []
