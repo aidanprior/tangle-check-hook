@@ -64,6 +64,14 @@ tangle_and_stage() {
   git add -A
 }
 
+  
+# Only update if content changed
+update_gitattributes_file() {
+  mv "$1" "$2"
+  echo "✓ Updated .gitattributes with $3 generated file(s)"
+  git add "$2"
+}
+
 # Helper: sync .gitattributes with generated files
 sync_gitattributes() {
   local rel_targets=("$@")
@@ -100,13 +108,6 @@ sync_gitattributes() {
       echo "$target linguist-generated=true" >> "$temp_file"
     done
   fi
-  
-  # Only update if content changed
-  update_gitattributes_file() {
-    mv "$1" "$2"
-    echo "✓ Updated .gitattributes with $3 generated file(s)"
-    git add "$2"
-  }
 
   if [ ! -f "$gitattributes_file" ]; then
     update_gitattributes_file "$temp_file" "$gitattributes_file" "${#rel_targets[@]}"
