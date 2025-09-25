@@ -66,6 +66,7 @@ tangle_and_stage() {
 
 # Helper: sync .gitattributes with generated files
 sync_gitattributes() {
+  local rel_targets=$1
   local gitattributes_file="${root}/.gitattributes"
   local temp_file="${gitattributes_file}.tmp"
   
@@ -149,7 +150,7 @@ tangle_and_stage
 
 # Sync .gitattributes if enabled
 if [ "$SYNC_GITATTRIBUTES" = true ]; then
-  sync_gitattributes
+  sync_gitattributes rel_targets
 fi
 
 if [ "$targets_staged" = true ]; then
