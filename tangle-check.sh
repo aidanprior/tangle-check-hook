@@ -66,7 +66,7 @@ tangle_and_stage() {
 
 # Helper: sync .gitattributes with generated files
 sync_gitattributes() {
-  local rel_targets=$1
+  local -n rel_targets=$1
   local gitattributes_file="${root}/.gitattributes"
   local temp_file="${gitattributes_file}.tmp"
   
