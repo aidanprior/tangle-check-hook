@@ -150,7 +150,7 @@ tangle_and_stage
 
 # Sync .gitattributes if enabled
 if [ "$SYNC_GITATTRIBUTES" = true ]; then
-  sync_gitattributes rel_targets
+  sync_gitattributes "${rel_targets[@]}"
 fi
 
 if [ "$targets_staged" = true ]; then
