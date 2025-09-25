@@ -96,14 +96,16 @@ sync_gitattributes() {
   fi
   
   # Only update if content changed
+  update_gitattributes_file() {
+    mv "$1" "$2"
+    echo "✓ Updated .gitattributes with $3 generated file(s)"
+    git add "$2"
+  }
+
   if [ ! -f "$gitattributes_file" ]; then
-    mv "$temp_file" "$gitattributes_file"
-    echo "✓ Updated .gitattributes with ${#rel_targets[@]} generated file(s)"
-    git add "$gitattributes_file"
+    update_gitattributes_file "$temp_file" "$gitattributes_file" "${#rel_targets[@]}"
   elif ! cmp -s "$temp_file" "$gitattributes_file" 2>/dev/null; then
-    mv "$temp_file" "$gitattributes_file"
-    echo "✓ Updated .gitattributes with ${#rel_targets[@]} generated file(s)"
-    git add "$gitattributes_file"
+    update_gitattributes_file "$temp_file" "$gitattributes_file" "${#rel_targets[@]}"
   else
     rm -f "$temp_file"
   fi
