@@ -96,7 +96,11 @@ sync_gitattributes() {
   fi
   
   # Only update if content changed
-  if [ ! -f "$gitattributes_file" ] || ! cmp -s "$temp_file" "$gitattributes_file" 2>/dev/null; then
+  if [ ! -f "$gitattributes_file" ]; then
+    mv "$temp_file" "$gitattributes_file"
+    echo "✓ Updated .gitattributes with ${#rel_targets[@]} generated file(s)"
+    git add "$gitattributes_file"
+  elif ! cmp -s "$temp_file" "$gitattributes_file" 2>/dev/null; then
     mv "$temp_file" "$gitattributes_file"
     echo "✓ Updated .gitattributes with ${#rel_targets[@]} generated file(s)"
     git add "$gitattributes_file"
